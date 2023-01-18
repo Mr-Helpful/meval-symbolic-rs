@@ -32,7 +32,7 @@ use serde::Deserialize;
 ///
 /// See [crate root](../index.html#deserialization) for another example.
 pub fn as_f64<'de, D: de::Deserializer<'de>>(deserializer: D) -> Result<f64, D::Error> {
-    Expr::deserialize(deserializer)?
-        .eval()
-        .map_err(D::Error::custom)
+  Expr::deserialize(deserializer)?
+    .eval()
+    .map_err(D::Error::custom)
 }
