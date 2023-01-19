@@ -2,12 +2,12 @@
 authors = ["Norbert Pozar <bertapozar@gmail.com>"]
 description = "A simple math expression parser and evaluator."
 documentation = "https://docs.rs/meval"
-homepage = "https://github.com/rekka/meval-rs"
+homepage = "https://github.com/Mr-Helpful/meval-symbolic-rs"
 keywords = ["math", "parser", "expression", "formula", "evaluator"]
 license = "Unlicense/MIT"
-name = "meval"
+name = "meval-symbolic"
 readme = "README.md"
-repository = "https://github.com/rekka/meval-rs"
+repository = "https://github.com/Mr-Helpful/meval-symbolic-rs"
 version = "0.2.0"
 exclude = ["README.tpl", ".travis.yml"]
 

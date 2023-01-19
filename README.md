@@ -2,12 +2,13 @@
 [![](http://meritbadge.herokuapp.com/meval)](https://crates.io/crates/meval)
 [![meval at docs.rs](https://docs.rs/meval/badge.svg)](https://docs.rs/meval)
 
-# meval
+# meval-symbolic
 
-This [Rust] crate provides a simple math expression parsing and evaluation. Its main goal is to
-be convenient to use, while allowing for some flexibility. Currently works only with `f64`
-types. A typical use case is the configuration of numerical computations in
-Rust, think initial data and boundary conditions, via config files or command line arguments.
+This [Rust] crate builds on the work of [meval](https://github.com/rekka/meval-rs) by adding:
+
+[x] support for common maths operators `+,-,*,/,,%` and methods `abs,sin,...` on expressions
+[ ] support for replacing subexpressions, i.e. `replace((x + 2) + x, x + 2, u) = u + x`
+[ ] symbolic solving for variables within expressions, i.e. `solve(x^2 + 2x + 1 = 0, x) = -1`
 
 ## Documentation
 
@@ -103,21 +104,21 @@ supported:
 
 - functions implemented using functions of the same name in [Rust std library][std-float]:
 
-    - `sqrt`, `abs`
-    - `exp`, `ln`, `log10`
-    - `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`
-    - `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`
-    - `floor`, `ceil`, `round`
-    - `signum`
+  - `sqrt`, `abs`
+  - `exp`, `ln`, `log10`
+  - `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`
+  - `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`
+  - `floor`, `ceil`, `round`
+  - `signum`
 
 - other functions:
 
-    - `max(x, ...)`, `min(x, ...)`: maximum and minimumum of 1 or more numbers
+  - `max(x, ...)`, `min(x, ...)`: maximum and minimumum of 1 or more numbers
 
 - constants:
 
-    - `pi`
-    - `e`
+  - `pi`
+  - `e`
 
 ## Deserialization
 
