@@ -195,7 +195,8 @@ extern crate serde_json;
 #[cfg(test)]
 extern crate serde_test;
 
-use std::fmt;
+use std::error;
+use std::fmt::{self, Display, Formatter};
 
 mod expr;
 mod extra_math;
@@ -222,8 +223,8 @@ pub enum Error {
   EvalError(String),
 }
 
-impl fmt::Display for Error {
-  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl Display for Error {
+  fn fmt(&self, f: &mut Formatter) -> fmt::Result {
     match *self {
       Error::UnknownVariable(ref name) => {
         write!(f, "Evaluation error: unknown variable `{}`.", name)
@@ -259,7 +260,7 @@ impl From<RPNError> for Error {
   }
 }
 
-impl std::error::Error for Error {
+impl error::Error for Error {
   fn description(&self) -> &str {
     match *self {
       Error::UnknownVariable(_) => "unknown variable",
@@ -270,7 +271,7 @@ impl std::error::Error for Error {
     }
   }
 
-  fn cause(&self) -> Option<&dyn std::error::Error> {
+  fn cause(&self) -> Option<&dyn error::Error> {
     match *self {
       Error::ParseError(ref e) => Some(e),
       Error::RPNError(ref e) => Some(e),
