@@ -454,6 +454,12 @@ pub fn eval_str<S: AsRef<str>>(expr: S) -> Result<f64, Error> {
   expr.eval_with_context(builtin())
 }
 
+impl From<&Expr> for Expr {
+  fn from(value: &Expr) -> Self {
+    value.clone()
+  }
+}
+
 impl FromStr for Expr {
   type Err = Error;
   /// Constructs an expression by parsing a string.
@@ -732,18 +738,6 @@ mod tests {
     match expr.clone().bind("x") {
       Err(Error::Function(_, FuncEvalError::UnknownFunction)) => {}
       _ => panic!("bind did not error"),
-    }
-  }
-
-  #[test]
-  fn hash_context() {
-    let y = 0.;
-    {
-      let z = 0.;
-
-      let mut ctx = Context::new();
-      ctx.var("x", 1.).func("f", |x| x + y).func("g", |x| x + z);
-      ctx.func2("g", |x, y| x + y);
     }
   }
 }

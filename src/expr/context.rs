@@ -470,3 +470,20 @@ impl<'a> ContextProvider for Context<'a> {
       .map_or(Err(FuncEvalError::UnknownFunction), |f| f(args))
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn hash_context() {
+    let y = 0.;
+    {
+      let z = 0.;
+
+      let mut ctx = Context::new();
+      ctx.var("x", 1.).func("f", |x| x + y).func("g", |x| x + z);
+      ctx.func2("g", |x, y| x + y);
+    }
+  }
+}

@@ -229,7 +229,6 @@ pub fn tokenize<S: AsRef<str>>(input: S) -> Result<Vec<Token>, ParseError> {
         other
       ),
     })?;
-    println!("{:?}", t);
 
     match t {
       Token::LParen => {

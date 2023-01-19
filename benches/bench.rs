@@ -1,9 +1,9 @@
 #![feature(test)]
 
-extern crate meval;
+extern crate meval_symbolic;
 extern crate test;
 
-use meval::{max_array, min_array, Context, ContextProvider, Expr, FuncEvalError};
+use meval_symbolic::{max_array, min_array, Context, ContextProvider, Expr, FuncEvalError};
 use std::f64::consts;
 use test::Bencher;
 
