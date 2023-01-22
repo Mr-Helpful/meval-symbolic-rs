@@ -23,9 +23,7 @@ use Error;
 ///
 /// [RPN]: https://en.wikipedia.org/wiki/Reverse_Polish_notation
 #[derive(Debug, Clone, PartialEq)]
-pub struct Expr {
-  rpn: Vec<Token>,
-}
+pub struct Expr(Vec<Token>);
 
 impl Expr {
   /// Evaluates the expression.
@@ -40,7 +38,7 @@ impl Expr {
 
     let mut stack = Vec::with_capacity(16);
 
-    for token in &self.rpn {
+    for token in &self.0 {
       match *token {
         Var(ref n) => {
           if let Some(v) = ctx.get_var(n) {
@@ -416,7 +414,7 @@ impl Expr {
   ///
   /// Returns `Err` if a missing variable is detected.
   fn check_context<C: ContextProvider>(&self, ctx: C) -> Result<(), Error> {
-    for t in &self.rpn {
+    for t in &self.0 {
       match *t {
         Token::Var(ref name) => {
           if ctx.get_var(name).is_none() {
@@ -468,7 +466,7 @@ impl FromStr for Expr {
 
     let rpn = to_rpn(&tokens)?;
 
-    Ok(Expr { rpn })
+    Ok(Expr(rpn))
   }
 }
 
@@ -488,12 +486,13 @@ impl Deref for Expr {
   type Target = [Token];
 
   fn deref(&self) -> &[Token] {
-    &self.rpn
+    &self.0
   }
 }
 
 mod context;
 mod operators;
+mod symbolic;
 
 #[cfg(feature = "serde")]
 pub mod de {

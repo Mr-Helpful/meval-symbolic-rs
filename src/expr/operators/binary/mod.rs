@@ -17,8 +17,8 @@ impl Expr {
   /// Private helper function to construct a new expression from the current
   /// expression, a reference to a right hand side and a operation to apply.
   fn binary_operator(mut self, rhs: impl Into<Expr>, tkn: Token) -> Self {
-    self.rpn.append(&mut rhs.into().to_vec());
-    self.rpn.push(tkn);
+    self.0.append(&mut rhs.into().to_vec());
+    self.0.push(tkn);
     self
   }
 }

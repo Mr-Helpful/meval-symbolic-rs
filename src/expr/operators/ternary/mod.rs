@@ -17,9 +17,9 @@ impl Expr {
   /// Private helper function to construct a new expression from the current
   /// expression, a reference to a mid and right side and a operation to apply.
   fn ternary_operator(mut self, mid: impl Into<Expr>, rhs: impl Into<Expr>, tkn: Token) -> Self {
-    self.rpn.append(&mut mid.into().to_vec());
-    self.rpn.append(&mut rhs.into().to_vec());
-    self.rpn.push(tkn);
+    self.0.append(&mut mid.into().to_vec());
+    self.0.append(&mut rhs.into().to_vec());
+    self.0.push(tkn);
     self
   }
 }
