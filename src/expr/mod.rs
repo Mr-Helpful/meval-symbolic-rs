@@ -1,11 +1,15 @@
 use std::ops::Deref;
 use std::str::FromStr;
 
-pub use self::context::*;
+use crate::Evaluatable_Trait;
+
+pub use self::context::{builtin, Context, ContextProvider};
 use extra_math::factorial;
 use shunting_yard::to_rpn;
 use tokenizer::{tokenize, Token};
 use Error;
+
+pub mod errors;
 
 /// Representation of a parsed expression.
 ///
@@ -23,14 +27,9 @@ use Error;
 ///
 /// [RPN]: https://en.wikipedia.org/wiki/Reverse_Polish_notation
 #[derive(Debug, Clone, PartialEq)]
-pub struct Expr(Vec<Token>);
+pub struct Expr(pub(crate) Vec<Token>);
 
 impl Expr {
-  /// Evaluates the expression.
-  pub fn eval(&self) -> Result<f64, Error> {
-    self.eval_with_context(builtin())
-  }
-
   /// Evaluates the expression with variables given by the argument.
   pub fn eval_with_context<C: ContextProvider>(&self, ctx: C) -> Result<f64, Error> {
     use tokenizer::Operation::*;
@@ -119,301 +118,13 @@ impl Expr {
     Ok(r)
   }
 
-  /// Creates a function of one variable based on this expression, with default constants and
-  /// functions.
-  ///
-  /// Binds the input of the returned closure to `var`.
-  ///
-  /// # Failure
-  ///
-  /// Returns `Err` if there is a variable in the expression that is not provided by the default
-  /// context or `var`.
-  pub fn bind<'a>(self, var: &str) -> Result<impl Fn(f64) -> f64 + 'a, Error> {
-    self.bind_with_context(builtin(), var)
-  }
-
-  /// Creates a function of one variable based on this expression.
-  ///
-  /// Binds the input of the returned closure to `var`.
-  ///
-  /// # Failure
-  ///
-  /// Returns `Err` if there is a variable in the expression that is not provided by `ctx` or
-  /// `var`.
-  pub fn bind_with_context<'a, C>(
-    self,
-    ctx: C,
-    var: &str,
-  ) -> Result<impl Fn(f64) -> f64 + 'a, Error>
-  where
-    C: ContextProvider + 'a,
-  {
-    self.check_context(((var, 0.), &ctx))?;
-    let var = var.to_owned();
-    Ok(move |x| {
-      self
-        .eval_with_context(((&var, x), &ctx))
-        .expect("Expr::bind")
-    })
-  }
-
-  /// Creates a function of two variables based on this expression, with default constants and
-  /// functions.
-  ///
-  /// Binds the inputs of the returned closure to `var1` and `var2`.
-  ///
-  /// # Failure
-  ///
-  /// Returns `Err` if there is a variable in the expression that is not provided by the default
-  /// context or `var`.
-  pub fn bind2<'a>(self, var1: &str, var2: &str) -> Result<impl Fn(f64, f64) -> f64 + 'a, Error> {
-    self.bind2_with_context(builtin(), var1, var2)
-  }
-
-  /// Creates a function of two variables based on this expression.
-  ///
-  /// Binds the inputs of the returned closure to `var1` and `var2`.
-  ///
-  /// # Failure
-  ///
-  /// Returns `Err` if there is a variable in the expression that is not provided by `ctx` or
-  /// `var`.
-  pub fn bind2_with_context<'a, C>(
-    self,
-    ctx: C,
-    var1: &str,
-    var2: &str,
-  ) -> Result<impl Fn(f64, f64) -> f64 + 'a, Error>
-  where
-    C: ContextProvider + 'a,
-  {
-    self.check_context(([(var1, 0.), (var2, 0.)], &ctx))?;
-    let var1 = var1.to_owned();
-    let var2 = var2.to_owned();
-    Ok(move |x, y| {
-      self
-        .eval_with_context(([(&var1, x), (&var2, y)], &ctx))
-        .expect("Expr::bind2")
-    })
-  }
-
-  /// Creates a function of three variables based on this expression, with default constants and
-  /// functions.
-  ///
-  /// Binds the inputs of the returned closure to `var1`, `var2` and `var3`.
-  ///
-  /// # Failure
-  ///
-  /// Returns `Err` if there is a variable in the expression that is not provided by the default
-  /// context or `var`.
-  pub fn bind3<'a>(
-    self,
-    var1: &str,
-    var2: &str,
-    var3: &str,
-  ) -> Result<impl Fn(f64, f64, f64) -> f64 + 'a, Error> {
-    self.bind3_with_context(builtin(), var1, var2, var3)
-  }
-
-  /// Creates a function of three variables based on this expression.
-  ///
-  /// Binds the inputs of the returned closure to `var1`, `var2` and `var3`.
-  ///
-  /// # Failure
-  ///
-  /// Returns `Err` if there is a variable in the expression that is not provided by `ctx` or
-  /// `var`.
-  pub fn bind3_with_context<'a, C>(
-    self,
-    ctx: C,
-    var1: &str,
-    var2: &str,
-    var3: &str,
-  ) -> Result<impl Fn(f64, f64, f64) -> f64 + 'a, Error>
-  where
-    C: ContextProvider + 'a,
-  {
-    self.check_context(([(var1, 0.), (var2, 0.), (var3, 0.)], &ctx))?;
-    let var1 = var1.to_owned();
-    let var2 = var2.to_owned();
-    let var3 = var3.to_owned();
-    Ok(move |x, y, z| {
-      self
-        .eval_with_context(([(&var1, x), (&var2, y), (&var3, z)], &ctx))
-        .expect("Expr::bind3")
-    })
-  }
-
-  /// Creates a function of four variables based on this expression, with default constants and
-  /// functions.
-  ///
-  /// Binds the inputs of the returned closure to `var1`, `var2`, `var3` and `var4`.
-  ///
-  /// # Failure
-  ///
-  /// Returns `Err` if there is a variable in the expression that is not provided by the default
-  /// context or `var`.
-  pub fn bind4<'a>(
-    self,
-    var1: &str,
-    var2: &str,
-    var3: &str,
-    var4: &str,
-  ) -> Result<impl Fn(f64, f64, f64, f64) -> f64 + 'a, Error> {
-    self.bind4_with_context(builtin(), var1, var2, var3, var4)
-  }
-
-  /// Creates a function of four variables based on this expression.
-  ///
-  /// Binds the inputs of the returned closure to `var1`, `var2`, `var3` and `var4`.
-  ///
-  /// # Failure
-  ///
-  /// Returns `Err` if there is a variable in the expression that is not provided by `ctx` or
-  /// `var`.
-  pub fn bind4_with_context<'a, C>(
-    self,
-    ctx: C,
-    var1: &str,
-    var2: &str,
-    var3: &str,
-    var4: &str,
-  ) -> Result<impl Fn(f64, f64, f64, f64) -> f64 + 'a, Error>
-  where
-    C: ContextProvider + 'a,
-  {
-    self.check_context(([(var1, 0.), (var2, 0.), (var3, 0.), (var4, 0.)], &ctx))?;
-    let var1 = var1.to_owned();
-    let var2 = var2.to_owned();
-    let var3 = var3.to_owned();
-    let var4 = var4.to_owned();
-    Ok(move |x1, x2, x3, x4| {
-      self
-        .eval_with_context(([(&var1, x1), (&var2, x2), (&var3, x3), (&var4, x4)], &ctx))
-        .expect("Expr::bind4")
-    })
-  }
-
-  /// Creates a function of five variables based on this expression, with default constants and
-  /// functions.
-  ///
-  /// Binds the inputs of the returned closure to `var1`, `var2`, `var3`, `var4` and `var5`.
-  ///
-  /// # Failure
-  ///
-  /// Returns `Err` if there is a variable in the expression that is not provided by the default
-  /// context or `var`.
-  pub fn bind5<'a>(
-    self,
-    var1: &str,
-    var2: &str,
-    var3: &str,
-    var4: &str,
-    var5: &str,
-  ) -> Result<impl Fn(f64, f64, f64, f64, f64) -> f64 + 'a, Error> {
-    self.bind5_with_context(builtin(), var1, var2, var3, var4, var5)
-  }
-
-  /// Creates a function of five variables based on this expression.
-  ///
-  /// Binds the inputs of the returned closure to `var1`, `var2`, `var3`, `var4` and `var5`.
-  ///
-  /// # Failure
-  ///
-  /// Returns `Err` if there is a variable in the expression that is not provided by `ctx` or
-  /// `var`.
-  pub fn bind5_with_context<'a, C>(
-    self,
-    ctx: C,
-    var1: &str,
-    var2: &str,
-    var3: &str,
-    var4: &str,
-    var5: &str,
-  ) -> Result<impl Fn(f64, f64, f64, f64, f64) -> f64 + 'a, Error>
-  where
-    C: ContextProvider + 'a,
-  {
-    self.check_context((
-      [(var1, 0.), (var2, 0.), (var3, 0.), (var4, 0.), (var5, 0.)],
-      &ctx,
-    ))?;
-    let var1 = var1.to_owned();
-    let var2 = var2.to_owned();
-    let var3 = var3.to_owned();
-    let var4 = var4.to_owned();
-    let var5 = var5.to_owned();
-    Ok(move |x1, x2, x3, x4, x5| {
-      self
-        .eval_with_context((
-          [
-            (&var1, x1),
-            (&var2, x2),
-            (&var3, x3),
-            (&var4, x4),
-            (&var5, x5),
-          ],
-          &ctx,
-        ))
-        .expect("Expr::bind5")
-    })
-  }
-
-  /// Binds the input of the returned closure to elements of `vars`.
-  ///
-  /// # Failure
-  ///
-  /// Returns `Err` if there is a variable in the expression that is not provided by the default
-  /// context or `var`.
-  pub fn bindn<'a>(self, vars: &'a [&str]) -> Result<impl Fn(&[f64]) -> f64 + 'a, Error> {
-    self.bindn_with_context(builtin(), vars)
-  }
-
-  /// Creates a function of N variables based on this expression.
-  ///
-  /// Binds the input of the returned closure to the elements of `vars`.
-  ///
-  /// # Failure
-  ///
-  /// Returns `Err` if there is a variable in the expression that is not provided by `ctx` or
-  /// `var`.
-  pub fn bindn_with_context<'a, C>(
-    self,
-    ctx: C,
-    vars: &'a [&str],
-  ) -> Result<impl Fn(&[f64]) -> f64 + 'a, Error>
-  where
-    C: ContextProvider + 'a,
-  {
-    let n = vars.len();
-    self.check_context((
-      vars
-        .into_iter()
-        .zip(vec![0.; n].into_iter())
-        .collect::<Vec<_>>(),
-      &ctx,
-    ))?;
-    let vars = vars.iter().map(|v| v.to_owned()).collect::<Vec<_>>();
-    Ok(move |x: &[f64]| {
-      self
-        .eval_with_context((
-          vars
-            .iter()
-            .zip(x.into_iter())
-            .map(|(v, x)| (v, *x))
-            .collect::<Vec<_>>(),
-          &ctx,
-        ))
-        .expect("Expr::bindn")
-    })
-  }
-
-  /// Checks that the value of every variable in the expression is specified by the context `ctx`.
+  /// Checks that the value of every variable in the expression is specified by
+  /// the context `ctx`.
   ///
   /// # Failure
   ///
   /// Returns `Err` if a missing variable is detected.
-  fn check_context<C: ContextProvider>(&self, ctx: C) -> Result<(), Error> {
+  pub(crate) fn check_context<C: ContextProvider>(&self, ctx: C) -> Result<(), Error> {
     for t in &self.0 {
       match *t {
         Token::Var(ref name) => {
@@ -445,6 +156,8 @@ impl Expr {
   }
 }
 
+Evaluatable_Trait!(Expr f64);
+
 /// Evaluates a string with built-in constants and functions.
 pub fn eval_str<S: AsRef<str>>(expr: S) -> Result<f64, Error> {
   let expr = Expr::from_str(expr.as_ref())?;
@@ -463,7 +176,6 @@ impl FromStr for Expr {
   /// Constructs an expression by parsing a string.
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     let tokens = tokenize(s)?;
-
     let rpn = to_rpn(&tokens)?;
 
     Ok(Expr(rpn))
@@ -611,6 +323,8 @@ pub mod de {
 
 #[cfg(test)]
 mod tests {
+  use crate::expr::errors::FuncEvalError;
+
   use super::*;
   use std::str::FromStr;
   use Error;

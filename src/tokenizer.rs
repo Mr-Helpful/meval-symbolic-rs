@@ -12,12 +12,13 @@ use nom::{
   combinator::{complete, map, map_res, recognize, value},
   multi::many0,
   number::complete::recognize_float,
-  sequence::{delimited, preceded, terminated, tuple},
-  IResult,
+  sequence::{delimited, pair, preceded, terminated},
+  IResult, Needed,
 };
 
 use std::{
   self, fmt,
+  num::NonZeroUsize,
   str::{from_utf8, FromStr},
 };
 
@@ -32,6 +33,26 @@ pub enum ParseError {
   MissingRParen(i32),
   /// Missing operator or function argument at the end of the expression.
   MissingArgument,
+}
+
+impl From<(&[u8], nom::Err<nom::error::Error<&[u8]>>)> for ParseError {
+  /// Converts from the initial input and a nom parse error into our parse error
+  fn from((bytes, err): (&[u8], nom::Err<nom::error::Error<&[u8]>>)) -> Self {
+    use nom::Err::*;
+    use ParseError::*;
+
+    match err {
+      Incomplete(Needed::Unknown) => MissingArgument,
+      Incomplete(Needed::Size(n)) => MissingRParen(n.get() as i32),
+      Error(e) => UnexpectedToken(bytes.len() - e.input.len()),
+      Failure(e) => panic!(
+        "Unexpected parse result when parsing `{}` at `{}`: {:?}",
+        String::from_utf8_lossy(bytes),
+        String::from_utf8_lossy(e.input),
+        Failure(e)
+      ),
+    }
+  }
 }
 
 impl fmt::Display for ParseError {
@@ -129,10 +150,10 @@ fn comma(input: &[u8]) -> IResult<&[u8], Token> {
 ///
 /// Must start with a letter or an underscore, can be followed by letters, digits or underscores.
 fn ident(input: &[u8]) -> IResult<&[u8], &[u8]> {
-  recognize(tuple((
+  recognize(pair(
     alt((tag("_"), alpha1)),
     many0(alt((tag("_"), alphanumeric1))),
-  )))(input)
+  ))(input)
 }
 
 fn var(input: &[u8]) -> IResult<&[u8], Token> {
@@ -189,8 +210,65 @@ enum TokenizerState {
 
 #[derive(Debug, Clone, Copy)]
 enum ParenState {
-  Subexpr,
-  Func,
+  SubExpr,
+  FuncArgs,
+}
+
+/// Parse a given mathematical expression
+///
+/// I've split out + cleaned up this parser
+/// so it can be reused for equations and rules
+///
+/// Also this breaks the usual way that parser combinators are written for
+/// considerably better performance as it uses much less backtracking
+pub(crate) fn expression(mut input: &[u8]) -> IResult<&[u8], Vec<Token>> {
+  use self::ParenState::*;
+  use self::Token::*;
+  use self::TokenizerState::*;
+
+  // current level of nesting, including whether the level represents arguments.
+  let mut paren_stack = vec![];
+  let mut state = LExpr;
+  let mut res = vec![];
+
+  while !input.is_empty() {
+    let t;
+    (input, t) = match (state, paren_stack.last()) {
+      (LExpr, _) => lexpr(input),
+      (AfterRExpr, None) => after_rexpr_no_paren(input),
+      (AfterRExpr, Some(&SubExpr)) => after_rexpr(input),
+      (AfterRExpr, Some(&FuncArgs)) => after_rexpr_comma(input),
+    }?;
+
+    match t {
+      LParen => {
+        paren_stack.push(SubExpr);
+      }
+      Func(..) => {
+        paren_stack.push(FuncArgs);
+      }
+      RParen => {
+        paren_stack.pop().expect("The paren_stack is empty!");
+      }
+      Var(_) | Number(_) => {
+        state = AfterRExpr;
+      }
+      Binary(_) | Comma => {
+        state = LExpr;
+      }
+      Unary(_) => {}
+    }
+    res.push(t);
+  }
+
+  match state {
+    LExpr => Err(nom::Err::Incomplete(Needed::Unknown)),
+    _ if !paren_stack.is_empty() => Err(nom::Err::Incomplete(Needed::Size(
+      NonZeroUsize::new(paren_stack.len())
+        .expect("The stack was non empty but the stack length was 0???"),
+    ))),
+    _ => Ok((input, res)),
+  }
 }
 
 /// Tokenize a given mathematical expression.
@@ -201,62 +279,10 @@ enum ParenState {
 ///
 /// Returns `Err` if the expression is not well-formed.
 pub fn tokenize<S: AsRef<str>>(input: S) -> Result<Vec<Token>, ParseError> {
-  use self::ParseError::*;
-  use self::TokenizerState::*;
-  use nom::Err::Error;
-
-  let mut state = LExpr;
-  // number of function arguments left
-  let mut paren_stack = vec![];
-  let mut res = vec![];
-
-  let input = input.as_ref().as_bytes();
-  let mut s = input;
-
-  while !s.is_empty() {
-    let (rest, t) = match (state, paren_stack.last()) {
-      (LExpr, _) => lexpr(s),
-      (AfterRExpr, None) => after_rexpr_no_paren(s),
-      (AfterRExpr, Some(&ParenState::Subexpr)) => after_rexpr(s),
-      (AfterRExpr, Some(&ParenState::Func)) => after_rexpr_comma(s),
-    }
-    .map_err(|e| match e {
-      Error(err) => UnexpectedToken(err.input.len()),
-      other => panic!(
-        "Unexpected parse result when parsing `{}` at `{}`: {:?}",
-        String::from_utf8_lossy(input),
-        String::from_utf8_lossy(s),
-        other
-      ),
-    })?;
-
-    match t {
-      Token::LParen => {
-        paren_stack.push(ParenState::Subexpr);
-      }
-      Token::Func(..) => {
-        paren_stack.push(ParenState::Func);
-      }
-      Token::RParen => {
-        paren_stack.pop().expect("The paren_stack is empty!");
-      }
-      Token::Var(_) | Token::Number(_) => {
-        state = AfterRExpr;
-      }
-      Token::Binary(_) | Token::Comma => {
-        state = LExpr;
-      }
-      Token::Unary(_) => {} // one in, one out leaves stack unaffected.
-    }
-    res.push(t);
-    s = rest;
-  }
-
-  match state {
-    LExpr => Err(MissingArgument),
-    _ if !paren_stack.is_empty() => Err(MissingRParen(paren_stack.len() as i32)),
-    _ => Ok(res),
-  }
+  let bytes = input.as_ref().as_bytes();
+  expression(bytes)
+    .map(|(_, tkns)| tkns)
+    .map_err(|err| ParseError::from((bytes, err)))
 }
 
 #[cfg(test)]
@@ -335,8 +361,8 @@ mod tests {
       Ok((&b""[..], Token::Number(123423e+50f64)))
     );
 
-    assert_eq!(number(b""), error(&b""[..], ErrorKind::Char));
-    assert_eq!(number(b"+"), error(&b""[..], ErrorKind::Char));
+    assert_eq!(number(b""), error(&b""[..], ErrorKind::IsNot));
+    assert_eq!(number(b"+"), error(&b"+"[..], ErrorKind::IsNot));
     assert_eq!(number(b"e"), error(&b"e"[..], ErrorKind::Char));
     assert_eq!(number(b"1E"), failure(&b""[..], ErrorKind::Digit));
     assert_eq!(number(b"1e+"), failure(&b""[..], ErrorKind::Digit));

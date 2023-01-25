@@ -45,31 +45,69 @@ pub enum SubstituteError {
 }
 
 impl Expr {
+  fn no_children(tkn: &Token) -> usize {
+    use self::Token::*;
+    match tkn {
+      Binary(_) => 2,
+      Unary(_) => 1,
+      Func(_, Some(n)) => n.clone(),
+      Number(_) | Var(_) => 0,
+      _ => panic!("expression wasn't parsed correctly!"),
+    }
+  }
+
+  /// Returns the children of a given token in self, from last to first.
+  fn children_at<'a>(
+    &'a self,
+    self_ptrs: &'a Vec<usize>,
+    i: usize,
+  ) -> impl Iterator<Item = usize> + 'a {
+    use self::Token::*;
+    let n = match self.0[i] {
+      Binary(_) => 2,
+      Unary(_) => 1,
+      Func(_, Some(n)) => n,
+      Number(_) | Var(_) => 0,
+      _ => panic!("expression wasn't parsed correctly!"),
+    };
+
+    // We use .max(1) to avoid overflow panics in here.
+    // This is safe as we'll always stop before returning any negative index.
+    (0..n).scan(i.max(1) - 1, move |i, _| {
+      let res = *i;
+      *i = self_ptrs[*i].max(1) - 1;
+      Some(res)
+    })
+  }
+
   /// Finds a vector of pointers to the beginning of each subexpression
   /// for each Token within an expression. Mainly useful when attempting to
   /// pattern match an expression
   ///
   /// e.g. `start_pointers({3, x, +, z, *}) = {0, 1, 0, 3, 0}`
-  fn start_pointers(&self) -> Result<Vec<usize>, SubstituteError> {
-    use self::SubstituteError::WrongToken;
+  pub(crate) fn start_pointers(&self) -> Vec<usize> {
     let mut ptrs = Vec::with_capacity(self.0.len());
 
     for (mut i, t) in self.0.iter().enumerate() {
-      let nargs = match t {
-        Token::Number(_) | Token::Var(_) => 0,
-        Token::Unary(_) => 1,
-        Token::Binary(_) => 2,
-        Token::Func(_, Some(n)) => n.clone(),
-        _ => return Err(WrongToken(t.clone())),
-      };
-
-      for _ in 0..nargs {
+      for _ in 0..Self::no_children(t) {
         i = ptrs[i - 1]
       }
       ptrs.push(i);
     }
 
-    Ok(ptrs)
+    ptrs
+  }
+
+  pub(crate) fn fold_expr<T>(&self, f: impl Fn(Vec<T>, Token) -> T) -> T {
+    let mut vals = vec![];
+
+    for t in self.0.iter() {
+      let n = Self::no_children(t);
+      let vs = vals.split_off(vals.len() - n);
+      vals.push(f(vs, t.clone()))
+    }
+
+    vals.pop().unwrap()
   }
 
   /// Matches a subexpression within self, returning any variables within
@@ -95,10 +133,10 @@ impl Expr {
   ///   ("c", "9"),
   /// ].into());
   /// ```
-  pub fn extract(&self, to_match: &Expr) -> Result<Substitutions, SubstituteError> {
-    let match_ptrs = to_match.start_pointers()?;
-    let self_ptrs = self.start_pointers()?;
-    self.extract_with_ptrs(self_ptrs, to_match, match_ptrs)
+  pub fn extract(&self, term: &Expr) -> Result<Substitutions, SubstituteError> {
+    let term_ptrs = term.start_pointers();
+    let self_ptrs = self.start_pointers();
+    self.extract_with_ptrs(self_ptrs, term, term_ptrs)
   }
 
   /// Does the main work of the extract method. We split this out as, when we
@@ -139,30 +177,6 @@ impl Expr {
     Ok(subs)
   }
 
-  /// Returns the children of a given token in self, from last to first.
-  fn children_at<'a>(
-    &'a self,
-    self_ptrs: &'a Vec<usize>,
-    i: usize,
-  ) -> impl Iterator<Item = usize> + 'a {
-    use self::Token::*;
-    let n = match self.0[i] {
-      Binary(_) => 2,
-      Unary(_) => 1,
-      Func(_, Some(n)) => n,
-      Number(_) | Var(_) => 0,
-      _ => panic!("expression wasn't parsed correctly!"),
-    };
-
-    // We use .max(1) to avoid overflow panics in here.
-    // This is safe as we'll always stop before returning any negative index.
-    (0..n).scan(i.max(1) - 1, move |i, _| {
-      let res = *i;
-      *i = self_ptrs[*i].max(1) - 1;
-      Some(res)
-    })
-  }
-
   /// Attempts to match the entire expression to `to_replace` and replaces it
   /// with `replacement`, replacing all matched variables from `to_replace`
   /// within `replacement`.
@@ -183,8 +197,8 @@ impl Expr {
   /// assert_eq!(subs, "(x+7)*(2*x) + (x+7)*9".parse().unwrap());
   /// ```
   pub fn replace(&self, term: &Expr, rplc: &Expr) -> Result<Expr, SubstituteError> {
-    let self_ptrs = self.start_pointers()?;
-    let term_ptrs = term.start_pointers()?;
+    let self_ptrs = self.start_pointers();
+    let term_ptrs = term.start_pointers();
     self.replace_with_ptrs(self_ptrs, term, term_ptrs, rplc)
   }
 
@@ -213,8 +227,8 @@ impl Expr {
   /// Substitutes subexpressions matching term with the replacement term.
   /// Starts at the smallest subexpressions.
   pub fn substitute(&self, term: &Expr, replacement: &Expr) -> Result<Expr, SubstituteError> {
-    let self_ptrs = self.start_pointers()?;
-    let term_ptrs = term.start_pointers()?;
+    let self_ptrs = self.start_pointers();
+    let term_ptrs = term.start_pointers();
     self.substitute_with_ptrs(self_ptrs, term, term_ptrs, replacement)
   }
 

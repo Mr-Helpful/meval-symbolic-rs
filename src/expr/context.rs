@@ -1,6 +1,5 @@
+use super::errors::FuncEvalError;
 use fnv::FnvHashMap;
-use std::error;
-use std::fmt::{self, Display, Formatter};
 use std::rc::Rc;
 
 type ContextHashMap<K, V> = FnvHashMap<K, V>;
@@ -67,37 +66,6 @@ pub trait ContextProvider {
   }
   fn eval_func(&self, _: &str, _: &[f64]) -> Result<f64, FuncEvalError> {
     Err(FuncEvalError::UnknownFunction)
-  }
-}
-
-/// Function evaluation error.
-#[derive(Debug, Clone, PartialEq)]
-pub enum FuncEvalError {
-  TooFewArguments,
-  TooManyArguments,
-  NumberArgs(usize),
-  UnknownFunction,
-}
-
-impl Display for FuncEvalError {
-  fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-    match *self {
-      FuncEvalError::UnknownFunction => write!(f, "Unknown function"),
-      FuncEvalError::NumberArgs(i) => write!(f, "Expected {} arguments", i),
-      FuncEvalError::TooFewArguments => write!(f, "Too few arguments"),
-      FuncEvalError::TooManyArguments => write!(f, "Too many arguments"),
-    }
-  }
-}
-
-impl error::Error for FuncEvalError {
-  fn description(&self) -> &str {
-    match *self {
-      FuncEvalError::UnknownFunction => "unknown function",
-      FuncEvalError::NumberArgs(_) => "wrong number of function arguments",
-      FuncEvalError::TooFewArguments => "too few function arguments",
-      FuncEvalError::TooManyArguments => "too many function arguments",
-    }
   }
 }
 

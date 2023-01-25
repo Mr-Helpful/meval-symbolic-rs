@@ -198,14 +198,19 @@ extern crate serde_test;
 use std::error;
 use std::fmt::{self, Display, Formatter};
 
+mod eqtn;
+pub(crate) mod evaluatable;
 mod expr;
 mod extra_math;
 pub mod shunting_yard;
+mod solver;
 pub mod tokenizer;
 
 #[cfg(feature = "serde")]
 pub mod de;
 
+pub use eqtn::*;
+use expr::errors::FuncEvalError;
 pub use expr::*;
 pub use shunting_yard::RPNError;
 pub use tokenizer::ParseError;
