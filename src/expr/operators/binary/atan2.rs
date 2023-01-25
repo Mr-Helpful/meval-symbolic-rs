@@ -1,5 +1,4 @@
-use super::Expr;
-use crate::tokenizer::Token;
+use super::{Expr, Token};
 
 pub trait ATan2<Rhs = Self> {
   type Output;

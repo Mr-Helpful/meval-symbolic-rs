@@ -6,9 +6,9 @@
 //!
 //! [RPN]: https://en.wikipedia.org/wiki/Reverse_Polish_notation
 //! [shunting]: https://en.wikipedia.org/wiki/Shunting-yard_algorithm
+use super::Token;
 use std;
 use std::fmt;
-use tokenizer::Token;
 
 #[derive(Debug, Clone, Copy)]
 enum Associativity {
@@ -65,8 +65,9 @@ impl std::error::Error for RPNError {
 /// Returns the operator precedence and associativity for a given token.
 fn prec_assoc(token: &Token) -> (u32, Associativity) {
   use self::Associativity::*;
-  use tokenizer::Operation::*;
-  use tokenizer::Token::*;
+  use super::Operation::*;
+  use super::Token::*;
+
   match *token {
     Binary(op) => match op {
       Plus | Minus => (1, Left),
@@ -88,8 +89,8 @@ fn prec_assoc(token: &Token) -> (u32, Associativity) {
 /// # Failure
 ///
 /// Returns `Err` if the input expression is not well-formed.
-pub fn to_rpn(input: &[Token]) -> Result<Vec<Token>, RPNError> {
-  use tokenizer::Token::*;
+pub fn to_rpn(input: Vec<Token>) -> Result<Vec<Token>, RPNError> {
+  use super::Token::*;
 
   let mut output = Vec::with_capacity(input.len());
   let mut stack = Vec::with_capacity(input.len());
@@ -194,27 +195,25 @@ pub fn to_rpn(input: &[Token]) -> Result<Vec<Token>, RPNError> {
 
 #[cfg(test)]
 mod tests {
-  use super::*;
-  use tokenizer::Operation::*;
-  use tokenizer::Token::*;
+  use super::{super::Operation::*, Token::*, *};
 
   #[test]
   fn test_to_rpn() {
-    assert_eq!(to_rpn(&[Number(1.)]), Ok(vec![Number(1.)]));
+    assert_eq!(to_rpn(vec![Number(1.)]), Ok(vec![Number(1.)]));
     assert_eq!(
-      to_rpn(&[Number(1.), Binary(Plus), Number(2.)]),
+      to_rpn(vec![Number(1.), Binary(Plus), Number(2.)]),
       Ok(vec![Number(1.), Number(2.), Binary(Plus)])
     );
     assert_eq!(
-      to_rpn(&[Unary(Minus), Number(1.), Binary(Pow), Number(2.)]),
+      to_rpn(vec![Unary(Minus), Number(1.), Binary(Pow), Number(2.)]),
       Ok(vec![Number(1.), Number(2.), Binary(Pow), Unary(Minus)])
     );
     assert_eq!(
-      to_rpn(&[Number(1.), Unary(Fact), Binary(Pow), Number(2.)]),
+      to_rpn(vec![Number(1.), Unary(Fact), Binary(Pow), Number(2.)]),
       Ok(vec![Number(1.), Unary(Fact), Number(2.), Binary(Pow)])
     );
     assert_eq!(
-      to_rpn(&[
+      to_rpn(vec![
         Number(1.),
         Unary(Fact),
         Binary(Div),
@@ -236,7 +235,7 @@ mod tests {
       ])
     );
     assert_eq!(
-      to_rpn(&[
+      to_rpn(vec![
         Number(3.),
         Binary(Minus),
         Number(1.),
@@ -252,7 +251,7 @@ mod tests {
       ])
     );
     assert_eq!(
-      to_rpn(&[
+      to_rpn(vec![
         LParen,
         Number(3.),
         Binary(Minus),
@@ -270,7 +269,7 @@ mod tests {
       ])
     );
     assert_eq!(
-      to_rpn(&[
+      to_rpn(vec![
         Number(1.),
         Binary(Minus),
         Unary(Minus),
@@ -286,12 +285,12 @@ mod tests {
       ])
     );
     assert_eq!(
-      to_rpn(&[Var("x".into()), Binary(Plus), Var("y".into())]),
+      to_rpn(vec![Var("x".into()), Binary(Plus), Var("y".into())]),
       Ok(vec![Var("x".into()), Var("y".into()), Binary(Plus)])
     );
 
     assert_eq!(
-      to_rpn(&[
+      to_rpn(vec![
         Func("max".into(), None),
         Func("sin".into(), None),
         Number(1f64),
@@ -311,28 +310,31 @@ mod tests {
       ])
     );
 
-    assert_eq!(to_rpn(&[Binary(Plus)]), Err(RPNError::NotEnoughOperands(0)));
     assert_eq!(
-      to_rpn(&[Func("f".into(), None), Binary(Plus), RParen]),
+      to_rpn(vec![Binary(Plus)]),
       Err(RPNError::NotEnoughOperands(0))
     );
     assert_eq!(
-      to_rpn(&[Var("x".into()), Number(1.)]),
+      to_rpn(vec![Func("f".into(), None), Binary(Plus), RParen]),
+      Err(RPNError::NotEnoughOperands(0))
+    );
+    assert_eq!(
+      to_rpn(vec![Var("x".into()), Number(1.)]),
       Err(RPNError::TooManyOperands)
     );
-    assert_eq!(to_rpn(&[LParen]), Err(RPNError::MismatchedLParen(0)));
-    assert_eq!(to_rpn(&[RParen]), Err(RPNError::MismatchedRParen(0)));
+    assert_eq!(to_rpn(vec![LParen]), Err(RPNError::MismatchedLParen(0)));
+    assert_eq!(to_rpn(vec![RParen]), Err(RPNError::MismatchedRParen(0)));
     assert_eq!(
-      to_rpn(&[Func("sin".into(), None)]),
+      to_rpn(vec![Func("sin".into(), None)]),
       Err(RPNError::MismatchedLParen(0))
     );
-    assert_eq!(to_rpn(&[Comma]), Err(RPNError::UnexpectedComma(0)));
+    assert_eq!(to_rpn(vec![Comma]), Err(RPNError::UnexpectedComma(0)));
     assert_eq!(
-      to_rpn(&[Func("f".into(), None), Comma]),
+      to_rpn(vec![Func("f".into(), None), Comma]),
       Err(RPNError::MismatchedLParen(0))
     );
     assert_eq!(
-      to_rpn(&[Func("f".into(), None), LParen, Comma, RParen]),
+      to_rpn(vec![Func("f".into(), None), LParen, Comma, RParen]),
       Err(RPNError::UnexpectedComma(2))
     );
   }

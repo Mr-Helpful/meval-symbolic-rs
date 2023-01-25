@@ -4,12 +4,15 @@ use std::str::FromStr;
 use crate::Evaluatable_Trait;
 
 pub use self::context::{builtin, Context, ContextProvider};
+pub use self::errors::FuncEvalError;
+pub use self::shunting_yard::{to_rpn, RPNError};
+pub use self::tokenizer::{tokenize, Operation, ParseError, Token};
 use extra_math::factorial;
-use shunting_yard::to_rpn;
-use tokenizer::{tokenize, Token};
 use Error;
 
 pub mod errors;
+pub mod shunting_yard;
+pub mod tokenizer;
 
 /// Representation of a parsed expression.
 ///
@@ -32,8 +35,8 @@ pub struct Expr(pub(crate) Vec<Token>);
 impl Expr {
   /// Evaluates the expression with variables given by the argument.
   pub fn eval_with_context<C: ContextProvider>(&self, ctx: C) -> Result<f64, Error> {
-    use tokenizer::Operation::*;
-    use tokenizer::Token::*;
+    use self::Operation::*;
+    use self::Token::*;
 
     let mut stack = Vec::with_capacity(16);
 
@@ -176,7 +179,7 @@ impl FromStr for Expr {
   /// Constructs an expression by parsing a string.
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     let tokens = tokenize(s)?;
-    let rpn = to_rpn(&tokens)?;
+    let rpn = to_rpn(tokens)?;
 
     Ok(Expr(rpn))
   }

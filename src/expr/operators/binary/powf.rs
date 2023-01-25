@@ -1,5 +1,4 @@
-use super::Expr;
-use crate::tokenizer::{Operation, Token};
+use super::{Expr, Operation, Token};
 
 pub trait Powf<Rhs = Self> {
   type Output;

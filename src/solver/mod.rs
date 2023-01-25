@@ -5,7 +5,7 @@ use self::{
   heuristics::{Length, NoOccurences},
   rules::{Rule, Rules},
 };
-use super::{tokenizer::Token, Eqtn, Expr};
+use super::{Eqtn, Expr, Token};
 
 mod heuristics;
 mod rules;
@@ -19,7 +19,7 @@ impl<H: Heuristic<Eqtn> + OnVar> OnVar for Solver<H> {
 }
 
 impl<H: Heuristic<Eqtn> + OnVar> Solver<H> {
-  fn solve(&self, eqtn: Eqtn) -> Result<Eqtn, String> {
+  pub fn solve(&self, eqtn: Eqtn) -> Result<Eqtn, String> {
     const DEPTH: usize = 10;
     let mut eqtns = vec![eqtn];
     let seen = HashSet::<Eqtn>::new();

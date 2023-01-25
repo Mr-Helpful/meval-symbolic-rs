@@ -38,8 +38,8 @@ pub enum ParseError {
 impl From<(&[u8], nom::Err<nom::error::Error<&[u8]>>)> for ParseError {
   /// Converts from the initial input and a nom parse error into our parse error
   fn from((bytes, err): (&[u8], nom::Err<nom::error::Error<&[u8]>>)) -> Self {
+    use self::ParseError::*;
     use nom::Err::*;
-    use ParseError::*;
 
     match err {
       Incomplete(Needed::Unknown) => MissingArgument,

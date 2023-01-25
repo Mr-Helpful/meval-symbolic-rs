@@ -202,18 +202,14 @@ mod eqtn;
 pub(crate) mod evaluatable;
 mod expr;
 mod extra_math;
-pub mod shunting_yard;
 mod solver;
-pub mod tokenizer;
 
 #[cfg(feature = "serde")]
 pub mod de;
 
 pub use eqtn::*;
-use expr::errors::FuncEvalError;
-pub use expr::*;
-pub use shunting_yard::RPNError;
-pub use tokenizer::ParseError;
+pub use expr::{eval_str, eval_str_with_context, Expr, RPNError};
+use expr::{FuncEvalError, ParseError, Token};
 
 /// An error produced during parsing or evaluation.
 #[derive(Debug, Clone, PartialEq)]

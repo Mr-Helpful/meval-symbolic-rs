@@ -1,6 +1,4 @@
-use crate::tokenizer::Token;
-
-use super::Expr;
+use super::{Expr, Token};
 
 macro_rules! ternary_trait_ref {
   ($trait_name:ident, $method_name:ident) => {

@@ -1,6 +1,4 @@
-use crate::tokenizer::{Operation, Token};
-
-use super::Expr;
+use super::{Expr, Operation, Token};
 pub use std::ops::Neg;
 
 impl Neg for Expr {

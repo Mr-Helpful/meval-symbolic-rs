@@ -1,5 +1,4 @@
-use super::Expr;
-use crate::tokenizer::Token;
+use super::{Expr, Token};
 
 pub trait Hypot<Rhs = Self> {
   type Output;

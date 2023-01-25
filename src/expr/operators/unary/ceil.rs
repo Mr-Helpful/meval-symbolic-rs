@@ -1,6 +1,4 @@
-use crate::tokenizer::Token;
-
-use super::Expr;
+use super::{Expr, Token};
 
 pub trait Ceil {
   type Output;

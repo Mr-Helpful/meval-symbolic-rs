@@ -1,5 +1,4 @@
-use super::Expr;
-use crate::tokenizer::{Operation, Token};
+use super::{Expr, Operation, Token};
 pub use std::ops::Div;
 
 impl<Rhs: Into<Expr>> Div<Rhs> for Expr {
