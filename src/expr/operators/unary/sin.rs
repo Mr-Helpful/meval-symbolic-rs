@@ -1,4 +1,4 @@
-use super::{Expr, Token};
+use super::{unary_operator, Expr, Token};
 
 pub trait Sin {
   type Output;
@@ -9,6 +9,6 @@ unary_trait_ref!(Sin, sin);
 impl Sin for Expr {
   type Output = Self;
   fn sin(self) -> Self::Output {
-    self.unary_operator(Token::Func("sin".into(), Some(1)))
+    unary_operator(self, Token::Func("sin".into(), Some(1)))
   }
 }

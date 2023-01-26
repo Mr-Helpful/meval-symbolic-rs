@@ -1,16 +1,29 @@
 use std::ops::Deref;
 use std::str::FromStr;
 
+use self::{
+  extra_math::factorial,
+  shunting_yard::to_rpn,
+  tokenizer::{tokenize, Operation},
+};
 use crate::Evaluatable_Trait;
 
-pub use self::context::{builtin, Context, ContextProvider};
-pub use self::errors::FuncEvalError;
-pub use self::shunting_yard::{to_rpn, RPNError};
-pub use self::tokenizer::{tokenize, Operation, ParseError, Token};
-use extra_math::factorial;
+pub use self::{
+  context::{builtin, max_array, min_array, ArgGuard, Context, ContextProvider},
+  errors::FuncEvalError,
+  shunting_yard::RPNError,
+  tokenizer::{ParseError, Token},
+};
 use Error;
 
-pub mod errors;
+mod context;
+mod errors;
+mod extra_math;
+mod operators;
+mod symbolic;
+
+#[cfg(feature = "serde")]
+pub mod de;
 pub mod shunting_yard;
 pub mod tokenizer;
 
@@ -204,10 +217,6 @@ impl Deref for Expr {
     &self.0
   }
 }
-
-mod context;
-mod operators;
-mod symbolic;
 
 #[cfg(feature = "serde")]
 pub mod de {

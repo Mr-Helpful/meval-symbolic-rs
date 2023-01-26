@@ -1,4 +1,4 @@
-use super::{Expr, Token};
+use super::{binary_operator, Expr, Token};
 
 pub trait Min<Rhs = Self> {
   type Output;
@@ -9,6 +9,6 @@ binary_trait_ref!(Min, min);
 impl<Rhs: Into<Expr>> Min<Rhs> for Expr {
   type Output = Self;
   fn min(self, rhs: Rhs) -> Self::Output {
-    self.binary_operator(rhs, Token::Func("min".into(), Some(2)))
+    binary_operator(self, rhs, Token::Func("min".into(), Some(2)))
   }
 }

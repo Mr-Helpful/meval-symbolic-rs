@@ -1,4 +1,4 @@
-use super::{Expr, Token};
+use super::{unary_operator, Expr, Token};
 
 pub trait Sqrt {
   type Output;
@@ -9,6 +9,6 @@ unary_trait_ref!(Sqrt, sqrt);
 impl Sqrt for Expr {
   type Output = Self;
   fn sqrt(self) -> Self::Output {
-    self.unary_operator(Token::Func("sqrt".into(), Some(1)))
+    unary_operator(self, Token::Func("sqrt".into(), Some(1)))
   }
 }

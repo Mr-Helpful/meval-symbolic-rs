@@ -1,10 +1,10 @@
-use super::{Expr, Operation, Token};
+use super::{binary_operator, Expr, Operation, Token};
 pub use std::ops::Mul;
 
 impl<Rhs: Into<Expr>> Mul<Rhs> for Expr {
   type Output = Self;
   fn mul(self, rhs: Rhs) -> Self::Output {
-    self.binary_operator(rhs, Token::Binary(Operation::Times))
+    binary_operator(self, rhs, Token::Binary(Operation::Times))
   }
 }
 

@@ -1,4 +1,4 @@
-use super::{Expr, Token};
+use super::{unary_operator, Expr, Token};
 
 pub trait Ln1p {
   type Output;
@@ -9,6 +9,6 @@ unary_trait_ref!(Ln1p, ln_1p);
 impl Ln1p for Expr {
   type Output = Self;
   fn ln_1p(self) -> Self::Output {
-    self.unary_operator(Token::Func("ln_1p".into(), Some(1)))
+    unary_operator(self, Token::Func("ln_1p".into(), Some(1)))
   }
 }

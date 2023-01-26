@@ -1,4 +1,4 @@
-use super::{Expr, Token};
+use super::{unary_operator, Expr, Token};
 
 pub trait Cos {
   type Output;
@@ -9,6 +9,6 @@ unary_trait_ref!(Cos, cos);
 impl Cos for Expr {
   type Output = Self;
   fn cos(self) -> Self::Output {
-    self.unary_operator(Token::Func("cos".into(), Some(1)))
+    unary_operator(self, Token::Func("cos".into(), Some(1)))
   }
 }

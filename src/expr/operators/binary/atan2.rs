@@ -1,4 +1,4 @@
-use super::{Expr, Token};
+use super::{binary_operator, Expr, Token};
 
 pub trait ATan2<Rhs = Self> {
   type Output;
@@ -9,6 +9,6 @@ binary_trait_ref!(ATan2, atan2);
 impl<Rhs: Into<Expr>> ATan2<Rhs> for Expr {
   type Output = Self;
   fn atan2(self, rhs: Rhs) -> Self::Output {
-    self.binary_operator(rhs, Token::Func("atan2".into(), Some(2)))
+    binary_operator(self, rhs, Token::Func("atan2".into(), Some(2)))
   }
 }

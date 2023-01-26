@@ -1,4 +1,4 @@
-use super::{Expr, Token};
+use super::{unary_operator, Expr, Token};
 
 pub trait Floor {
   type Output;
@@ -9,6 +9,6 @@ unary_trait_ref!(Floor, floor);
 impl Floor for Expr {
   type Output = Self;
   fn floor(self) -> Self::Output {
-    self.unary_operator(Token::Func("floor".into(), Some(1)))
+    unary_operator(self, Token::Func("floor".into(), Some(1)))
   }
 }

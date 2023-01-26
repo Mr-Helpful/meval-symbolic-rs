@@ -11,15 +11,13 @@ macro_rules! ternary_trait_ref {
   };
 }
 
-impl Expr {
-  /// Private helper function to construct a new expression from the current
-  /// expression, a reference to a mid and right side and a operation to apply.
-  fn ternary_operator(mut self, mid: impl Into<Expr>, rhs: impl Into<Expr>, tkn: Token) -> Self {
-    self.0.append(&mut mid.into().to_vec());
-    self.0.append(&mut rhs.into().to_vec());
-    self.0.push(tkn);
-    self
-  }
+/// Private helper function to construct a new expression from the current
+/// expression, a reference to a mid and right side and a operation to apply.
+fn ternary_operator(mut lhs: Expr, mid: impl Into<Expr>, rhs: impl Into<Expr>, tkn: Token) -> Expr {
+  lhs.0.append(&mut mid.into().to_vec());
+  lhs.0.append(&mut rhs.into().to_vec());
+  lhs.0.push(tkn);
+  lhs
 }
 
 impl<T, Mid, Rhs, Output> Ternary<Mid, Rhs, Output> for T where T: MulAdd<Mid, Rhs, Output = Output> {}

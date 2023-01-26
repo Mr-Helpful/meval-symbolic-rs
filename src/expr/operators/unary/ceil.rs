@@ -1,4 +1,4 @@
-use super::{Expr, Token};
+use super::{unary_operator, Expr, Token};
 
 pub trait Ceil {
   type Output;
@@ -9,6 +9,6 @@ unary_trait_ref!(Ceil, ceil);
 impl Ceil for Expr {
   type Output = Self;
   fn ceil(self) -> Self::Output {
-    self.unary_operator(Token::Func("ceil".into(), Some(1)))
+    unary_operator(self, Token::Func("ceil".into(), Some(1)))
   }
 }

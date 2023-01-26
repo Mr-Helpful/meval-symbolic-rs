@@ -7,8 +7,7 @@
 //! [RPN]: https://en.wikipedia.org/wiki/Reverse_Polish_notation
 //! [shunting]: https://en.wikipedia.org/wiki/Shunting-yard_algorithm
 use super::Token;
-use std;
-use std::fmt;
+use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, Clone, Copy)]
 enum Associativity {
@@ -32,8 +31,8 @@ pub enum RPNError {
   TooManyOperands,
 }
 
-impl fmt::Display for RPNError {
-  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl Display for RPNError {
+  fn fmt(&self, f: &mut Formatter) -> fmt::Result {
     match *self {
       RPNError::MismatchedLParen(i) => {
         write!(f, "Mismatched left parenthesis at token {}.", i)
@@ -46,18 +45,6 @@ impl fmt::Display for RPNError {
       RPNError::TooManyOperands => {
         write!(f, "Too many operands left at the end of expression.")
       }
-    }
-  }
-}
-
-impl std::error::Error for RPNError {
-  fn description(&self) -> &str {
-    match *self {
-      RPNError::MismatchedLParen(_) => "mismatched left parenthesis",
-      RPNError::MismatchedRParen(_) => "mismatched right parenthesis",
-      RPNError::UnexpectedComma(_) => "unexpected comma",
-      RPNError::NotEnoughOperands(_) => "missing operands",
-      RPNError::TooManyOperands => "too many operands left at the end of expression",
     }
   }
 }

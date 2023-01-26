@@ -195,21 +195,21 @@ extern crate serde_json;
 #[cfg(test)]
 extern crate serde_test;
 
-use std::error;
-use std::fmt::{self, Display, Formatter};
-
 mod eqtn;
-pub(crate) mod evaluatable;
+mod evaluatable;
 mod expr;
-mod extra_math;
 mod solver;
 
-#[cfg(feature = "serde")]
-pub mod de;
-
 pub use eqtn::*;
-pub use expr::{eval_str, eval_str_with_context, Expr, RPNError};
-use expr::{FuncEvalError, ParseError, Token};
+#[cfg(feature = "serde")]
+pub use expr::de;
+pub use expr::{
+  eval_str, eval_str_with_context, max_array, min_array, shunting_yard, tokenizer, ArgGuard,
+  Context, ContextProvider, Expr, FuncEvalError,
+};
+
+use expr::{builtin, ParseError, RPNError, Token};
+use std::fmt::{self, Display, Formatter};
 
 /// An error produced during parsing or evaluation.
 #[derive(Debug, Clone, PartialEq)]
@@ -258,26 +258,5 @@ impl From<ParseError> for Error {
 impl From<RPNError> for Error {
   fn from(err: RPNError) -> Error {
     Error::RPNError(err)
-  }
-}
-
-impl error::Error for Error {
-  fn description(&self) -> &str {
-    match *self {
-      Error::UnknownVariable(_) => "unknown variable",
-      Error::Function(_, _) => "function evaluation error",
-      Error::EvalError(_) => "eval error",
-      Error::ParseError(ref e) => e.description(),
-      Error::RPNError(ref e) => e.description(),
-    }
-  }
-
-  fn cause(&self) -> Option<&dyn error::Error> {
-    match *self {
-      Error::ParseError(ref e) => Some(e),
-      Error::RPNError(ref e) => Some(e),
-      Error::Function(_, ref e) => Some(e),
-      _ => None,
-    }
   }
 }

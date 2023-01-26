@@ -1,10 +1,10 @@
-use super::{Expr, Operation, Token};
+use super::{unary_operator, Expr, Operation, Token};
 pub use std::ops::Neg;
 
 impl Neg for Expr {
   type Output = Self;
   fn neg(self) -> Self::Output {
-    self.unary_operator(Token::Unary(Operation::Minus))
+    unary_operator(self, Token::Unary(Operation::Minus))
   }
 }
 

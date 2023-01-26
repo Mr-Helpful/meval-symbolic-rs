@@ -1,7 +1,5 @@
+use super::{builtin, ContextProvider, Expr};
 use crate::Evaluatable_Trait;
-
-use super::expr::*;
-use super::Expr;
 use Error;
 
 /// A relation between two expressions, e.g. `x = 5`

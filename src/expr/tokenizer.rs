@@ -10,6 +10,7 @@ use nom::{
   bytes::complete::{is_not, tag},
   character::complete::{alpha1, alphanumeric1, multispace0},
   combinator::{complete, map, map_res, recognize, value},
+  error::Error,
   multi::many0,
   number::complete::recognize_float,
   sequence::{delimited, pair, preceded, terminated},
@@ -17,7 +18,7 @@ use nom::{
 };
 
 use std::{
-  self, fmt,
+  fmt::{self, Display, Formatter},
   num::NonZeroUsize,
   str::{from_utf8, FromStr},
 };
@@ -35,9 +36,9 @@ pub enum ParseError {
   MissingArgument,
 }
 
-impl From<(&[u8], nom::Err<nom::error::Error<&[u8]>>)> for ParseError {
+impl From<(&[u8], nom::Err<Error<&[u8]>>)> for ParseError {
   /// Converts from the initial input and a nom parse error into our parse error
-  fn from((bytes, err): (&[u8], nom::Err<nom::error::Error<&[u8]>>)) -> Self {
+  fn from((bytes, err): (&[u8], nom::Err<Error<&[u8]>>)) -> Self {
     use self::ParseError::*;
     use nom::Err::*;
 
@@ -55,8 +56,8 @@ impl From<(&[u8], nom::Err<nom::error::Error<&[u8]>>)> for ParseError {
   }
 }
 
-impl fmt::Display for ParseError {
-  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl Display for ParseError {
+  fn fmt(&self, f: &mut Formatter) -> fmt::Result {
     match *self {
       ParseError::UnexpectedToken(i) => write!(f, "Unexpected token at byte {}.", i),
       ParseError::MissingRParen(i) => write!(
@@ -66,16 +67,6 @@ impl fmt::Display for ParseError {
         if i == 1 { "is" } else { "es" }
       ),
       ParseError::MissingArgument => write!(f, "Missing argument at the end of expression."),
-    }
-  }
-}
-
-impl std::error::Error for ParseError {
-  fn description(&self) -> &str {
-    match *self {
-      ParseError::UnexpectedToken(_) => "unexpected token",
-      ParseError::MissingRParen(_) => "missing right parenthesis",
-      ParseError::MissingArgument => "missing argument",
     }
   }
 }

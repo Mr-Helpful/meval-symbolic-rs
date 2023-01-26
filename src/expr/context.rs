@@ -1,4 +1,4 @@
-use super::errors::FuncEvalError;
+use super::FuncEvalError;
 use fnv::FnvHashMap;
 use std::rc::Rc;
 
@@ -90,7 +90,6 @@ impl<'a, T: ContextProvider> ContextProvider for &'a T {
   fn get_var(&self, name: &str) -> Option<f64> {
     (&**self).get_var(name)
   }
-
   fn eval_func(&self, name: &str, args: &[f64]) -> Result<f64, FuncEvalError> {
     (&**self).eval_func(name, args)
   }
@@ -100,7 +99,6 @@ impl<'a, T: ContextProvider> ContextProvider for &'a mut T {
   fn get_var(&self, name: &str) -> Option<f64> {
     (&**self).get_var(name)
   }
-
   fn eval_func(&self, name: &str, args: &[f64]) -> Result<f64, FuncEvalError> {
     (&**self).eval_func(name, args)
   }

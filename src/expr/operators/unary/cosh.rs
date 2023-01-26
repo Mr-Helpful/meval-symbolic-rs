@@ -1,4 +1,4 @@
-use super::{Expr, Token};
+use super::{unary_operator, Expr, Token};
 
 pub trait Cosh {
   type Output;
@@ -9,6 +9,6 @@ unary_trait_ref!(Cosh, cosh);
 impl Cosh for Expr {
   type Output = Self;
   fn cosh(self) -> Self::Output {
-    self.unary_operator(Token::Func("cosh".into(), Some(1)))
+    unary_operator(self, Token::Func("cosh".into(), Some(1)))
   }
 }

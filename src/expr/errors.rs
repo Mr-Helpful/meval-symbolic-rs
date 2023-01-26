@@ -1,7 +1,4 @@
-use std::error;
-use std::fmt;
-use std::fmt::Display;
-use std::fmt::Formatter;
+use std::fmt::{self, Display, Formatter};
 
 /// Function evaluation error.
 #[derive(Debug, Clone, PartialEq)]
@@ -19,17 +16,6 @@ impl Display for FuncEvalError {
       FuncEvalError::NumberArgs(i) => write!(f, "Expected {} arguments", i),
       FuncEvalError::TooFewArguments => write!(f, "Too few arguments"),
       FuncEvalError::TooManyArguments => write!(f, "Too many arguments"),
-    }
-  }
-}
-
-impl error::Error for FuncEvalError {
-  fn description(&self) -> &str {
-    match *self {
-      FuncEvalError::UnknownFunction => "unknown function",
-      FuncEvalError::NumberArgs(_) => "wrong number of function arguments",
-      FuncEvalError::TooFewArguments => "too few function arguments",
-      FuncEvalError::TooManyArguments => "too many function arguments",
     }
   }
 }

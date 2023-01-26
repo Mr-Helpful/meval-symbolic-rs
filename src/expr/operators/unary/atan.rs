@@ -1,4 +1,4 @@
-use super::{Expr, Token};
+use super::{unary_operator, Expr, Token};
 
 pub trait ATan {
   type Output;
@@ -9,6 +9,6 @@ unary_trait_ref!(ATan, atan);
 impl ATan for Expr {
   type Output = Self;
   fn atan(self) -> Self::Output {
-    self.unary_operator(Token::Func("atan".into(), Some(1)))
+    unary_operator(self, Token::Func("atan".into(), Some(1)))
   }
 }
