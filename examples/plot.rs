@@ -47,5 +47,5 @@ fn main() {
       );
     }
   }
-  fg.show();
+  fg.show().unwrap();
 }
