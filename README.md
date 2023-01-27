@@ -16,7 +16,7 @@ This [Rust] crate builds on the work of [meval](https://github.com/rekka/meval-r
 
 ## Installation
 
-:heavy_exclamation_mark:__Warning__:heavy_exclamation_mark: : Not currently a package but when I eventually get around to publishing:
+> :heavy_exclamation_mark:__Warning__:heavy_exclamation_mark: : Not currently a package but when I eventually get around to publishing
 
 Simply add the corresponding entry to your `Cargo.toml` dependency list:
 
