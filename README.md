@@ -7,7 +7,7 @@
 This [Rust] crate builds on the work of [meval](https://github.com/rekka/meval-rs) by adding:
 
 - [x] support for common maths operators `+,-,*,/,,%` and methods `abs,sin,...` on expressions
-- [ ] support for replacing subexpressions, i.e. `replace((x + 2) + x, x + 2, u) = u + x`
+- [x] support for replacing subexpressions, i.e. `replace((x + 2) + x, x + 2, u) = u + x`
 - [ ] symbolic solving for variables within expressions, i.e. `solve(x^2 + 2x + 1 = 0, x) = -1`
 
 ## Documentation
@@ -16,20 +16,22 @@ This [Rust] crate builds on the work of [meval](https://github.com/rekka/meval-r
 
 ## Installation
 
+:heavy_exclamation_mark:__Warning__:heavy_exclamation_mark: : Not currently a package but when I eventually get around to publishing:
+
 Simply add the corresponding entry to your `Cargo.toml` dependency list:
 
 ```toml
 [dependencies]
-meval = "0.2"
+meval_symbolic = "1"
 ```
 
-**Requires Rust 1.26.**
+__Requires Rust 1.26.__
 
 ## Simple examples
 
 ```rust
 fn main() {
-    let r = meval::eval_str("1 + 2").unwrap();
+    let r = meval_symbolic::eval_str("1 + 2").unwrap();
 
     println!("1 + 2 = {}", r);
 }
@@ -40,7 +42,7 @@ for this and more:
 
 ```rust
 fn main() {
-    let expr: meval::Expr = "sin(pi * x)".parse().unwrap();
+    let expr: meval_symbolic::Expr = "sin(pi * x)".parse().unwrap();
     let func = expr.bind("x").unwrap();
 
     let vs: Vec<_> = (0..100+1).map(|i| func(i as f64 / 100.)).collect();
@@ -52,7 +54,7 @@ fn main() {
 Custom constants and functions? Define a `Context`!
 
 ```rust
-use meval::{Expr, Context};
+use meval_symbolic::{Expr, Context};
 
 let y = 1.;
 let expr: Expr = "phi(-2 * zeta + x)".parse().unwrap();
@@ -75,7 +77,7 @@ If you need a custom function depending on mutable parameters, you will need to 
 
 ```rust
 use std::cell::Cell;
-use meval::{Expr, Context};
+use meval_symbolic::{Expr, Context};
 let y = Cell::new(0.);
 let expr: Expr = "phi(x)".parse().unwrap();
 
@@ -90,7 +92,7 @@ assert_eq!(func(2.), 5.);
 
 ## Supported expressions
 
-`meval` supports basic mathematical operations on floating point numbers:
+`meval_symbolic` supports basic mathematical operations on floating point numbers:
 
 - binary operators: `+`, `-`, `*`, `/`, `%` (remainder), `^` (power)
 - unary operators: `+`, `-`, `!` (factorial)
@@ -130,14 +132,14 @@ configuration easy to set up, if the feature `serde` is enabled
 #[macro_use]
 extern crate serde_derive;
 extern crate toml;
-extern crate meval;
-use meval::{Expr, Context};
+extern crate meval_symbolic;
+use meval_symbolic::{Expr, Context};
 
 #[derive(Deserialize)]
 struct Ode {
-    #[serde(deserialize_with = "meval::de::as_f64")]
+    #[serde(deserialize_with = "meval_symbolic::de::as_f64")]
     x0: f64,
-    #[serde(deserialize_with = "meval::de::as_f64")]
+    #[serde(deserialize_with = "meval_symbolic::de::as_f64")]
     t0: f64,
     f: Expr,
 }
