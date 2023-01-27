@@ -4,7 +4,7 @@
 
 # meval-symbolic
 
-This [Rust] crate builds on the work of [meval](https://github.com/rekka/meval-rs) by adding:
+This __future__ [Rust] crate builds on the work of [meval](https://github.com/rekka/meval-rs) by adding:
 
 - [x] support for common maths operators `+,-,*,/,,%` and methods `abs,sin,...` on expressions
 - [x] support for replacing subexpressions, i.e. `replace((x + 2) + x, x + 2, u) = u + x`
