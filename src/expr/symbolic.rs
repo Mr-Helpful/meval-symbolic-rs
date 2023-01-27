@@ -41,7 +41,6 @@ impl DerefMut for Substitutions {
 pub enum SubstituteError {
   Inconsistent(String, Expr, Expr),
   NotMatching,
-  WrongToken(Token),
 }
 
 impl Expr {
@@ -115,9 +114,8 @@ impl Expr {
   ///
   /// Returns:
   /// - `Ok(Substitutions)` if matching successful
-  /// - `Err(WrongToken)` if the parse of either expression has `(`,`,` or `)`
   /// - `Err(NotMatching)` if the structure of `to_match` doesn't match self
-  /// - `Err(Inconsistent)` if matching assigns the same variable different expressions
+  /// - `Err(Inconsistent)` if a variable is assigned different subexpressions
   ///
   /// # Examples
   ///
@@ -134,23 +132,11 @@ impl Expr {
   /// ].into());
   /// ```
   pub fn extract(&self, term: &Expr) -> Result<Substitutions, SubstituteError> {
-    let term_ptrs = term.start_pointers();
-    let self_ptrs = self.start_pointers();
-    self.extract_with_ptrs(self_ptrs, term, term_ptrs)
-  }
-
-  /// Does the main work of the extract method. We split this out as, when we
-  /// want to test an expression against multiple subexpressions we can avoid
-  /// calculating self_ptrs multiple times using this.
-  fn extract_with_ptrs(
-    &self,
-    self_ptrs: Vec<usize>,
-    term: &Expr,
-    term_ptrs: Vec<usize>,
-  ) -> Result<Substitutions, SubstituteError> {
     use self::SubstituteError::{Inconsistent, NotMatching};
     use self::Token::*;
 
+    let term_ptrs = term.start_pointers();
+    let self_ptrs = self.start_pointers();
     let mut subs = Substitutions::new();
     let mut to_check = vec![(self_ptrs.len() - 1, term_ptrs.len() - 1)];
 
@@ -197,21 +183,9 @@ impl Expr {
   /// assert_eq!(subs, "(x+7)*(2*x) + (x+7)*9".parse().unwrap());
   /// ```
   pub fn replace(&self, term: &Expr, rplc: &Expr) -> Result<Expr, SubstituteError> {
-    let self_ptrs = self.start_pointers();
-    let term_ptrs = term.start_pointers();
-    self.replace_with_ptrs(self_ptrs, term, term_ptrs, rplc)
-  }
-
-  fn replace_with_ptrs(
-    &self,
-    self_ptrs: Vec<usize>,
-    term: &Expr,
-    term_ptrs: Vec<usize>,
-    rplc: &Expr,
-  ) -> Result<Expr, SubstituteError> {
     use self::Token::Var;
 
-    let subs = self.extract_with_ptrs(self_ptrs, term, term_ptrs)?;
+    let subs = self.extract(term)?;
     let try_sub = |tkn: &Token| {
       if let Var(ident) = tkn {
         if let Some(expr) = subs.get(ident) {
@@ -225,13 +199,7 @@ impl Expr {
   }
 
   /// Substitutes subexpressions matching term with the replacement term.
-  /// Starts at the smallest subexpressions.
-  pub fn substitute(&self, term: &Expr, replacement: &Expr) -> Result<Expr, SubstituteError> {
-    let self_ptrs = self.start_pointers();
-    let term_ptrs = term.start_pointers();
-    self.substitute_with_ptrs(self_ptrs, term, term_ptrs, replacement)
-  }
-
+  ///
   /// Note on implementation:
   /// We apply subsitutions from the top down, only processing the first
   /// substitution within each branch to avoid exponential growth due to terms
@@ -243,13 +211,8 @@ impl Expr {
   /// If we went from front to back, the size of the initial section of the
   /// expression would change, requiring us to increment or decrement the
   /// pointers after this initial section.
-  fn substitute_with_ptrs(
-    &self,
-    self_ptrs: Vec<usize>,
-    term: &Expr,
-    term_ptrs: Vec<usize>,
-    rplc: &Expr,
-  ) -> Result<Expr, SubstituteError> {
+  pub fn substitute(&self, term: &Expr, rplc: &Expr) -> Result<Expr, SubstituteError> {
+    let self_ptrs = self.start_pointers();
     let mut res = self.clone();
     let mut to_sub = vec![false; res.len()];
     to_sub.last_mut().map(|x| *x = true);
@@ -259,12 +222,10 @@ impl Expr {
       if !to_sub[j] {
         continue;
       }
-
       let i = self_ptrs[j];
       let sub_expr = Expr(self.0[i..=j].iter().cloned().collect());
-      let sub_ptrs = self_ptrs[i..=j].iter().map(|k| k - self_ptrs[i]).collect();
 
-      if let Ok(expr) = sub_expr.replace_with_ptrs(sub_ptrs, term, term_ptrs.clone(), rplc) {
+      if let Ok(expr) = sub_expr.replace(term, rplc) {
         // replace end and don't recurse
         res.0.splice(i..=j, expr.0);
       } else {

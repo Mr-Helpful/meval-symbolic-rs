@@ -1,31 +1,26 @@
 use std::ops::Deref;
 use std::str::FromStr;
 
-use self::{
-  extra_math::factorial,
-  shunting_yard::to_rpn,
-  tokenizer::{tokenize, Operation},
-};
+use self::{extra_math::factorial, parser::tokenizer::Operation};
 use crate::Evaluatable_Trait;
+use Error;
 
 pub use self::{
   context::{builtin, max_array, min_array, ArgGuard, Context, ContextProvider},
   errors::FuncEvalError,
-  shunting_yard::RPNError,
-  tokenizer::{ParseError, Token},
+  parser::{
+    shunting_yard::{self, RPNError},
+    tokenizer::{self, ParseError, Token},
+  },
+  symbolic::SubstituteError,
 };
-use Error;
 
 mod context;
 mod errors;
 mod extra_math;
 mod operators;
+mod parser;
 mod symbolic;
-
-#[cfg(feature = "serde")]
-pub mod de;
-pub mod shunting_yard;
-pub mod tokenizer;
 
 /// Representation of a parsed expression.
 ///
@@ -187,17 +182,6 @@ impl From<&Expr> for Expr {
   }
 }
 
-impl FromStr for Expr {
-  type Err = Error;
-  /// Constructs an expression by parsing a string.
-  fn from_str(s: &str) -> Result<Self, Self::Err> {
-    let tokens = tokenize(s)?;
-    let rpn = to_rpn(tokens)?;
-
-    Ok(Expr(rpn))
-  }
-}
-
 /// Evaluates a string with the given context.
 ///
 /// No built-ins are defined in this case.
@@ -215,121 +199,6 @@ impl Deref for Expr {
 
   fn deref(&self) -> &[Token] {
     &self.0
-  }
-}
-
-#[cfg(feature = "serde")]
-pub mod de {
-  use super::Expr;
-  use serde;
-  use std::fmt;
-  use std::str::FromStr;
-  use tokenizer::Token;
-
-  impl<'de> serde::Deserialize<'de> for Expr {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-      D: serde::Deserializer<'de>,
-    {
-      struct ExprVisitor;
-
-      impl<'de> serde::de::Visitor<'de> for ExprVisitor {
-        type Value = Expr;
-
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-          formatter.write_str("a math expression")
-        }
-
-        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-        where
-          E: serde::de::Error,
-        {
-          Expr::from_str(v).map_err(serde::de::Error::custom)
-        }
-
-        fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
-        where
-          E: serde::de::Error,
-        {
-          Ok(Expr {
-            rpn: vec![Token::Number(v)],
-          })
-        }
-
-        fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
-        where
-          E: serde::de::Error,
-        {
-          Ok(Expr {
-            rpn: vec![Token::Number(v as f64)],
-          })
-        }
-
-        fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
-        where
-          E: serde::de::Error,
-        {
-          Ok(Expr {
-            rpn: vec![Token::Number(v as f64)],
-          })
-        }
-      }
-
-      deserializer.deserialize_any(ExprVisitor)
-    }
-  }
-
-  #[cfg(test)]
-  mod tests {
-    use super::*;
-    use de::as_f64;
-    use serde_json;
-    use serde_test;
-    #[test]
-    fn test_deserialization() {
-      use serde_test::Token;
-      let expr = Expr::from_str("sin(x)").unwrap();
-
-      serde_test::assert_de_tokens(&expr, &[Token::Str("sin(x)")]);
-      serde_test::assert_de_tokens(&expr, &[Token::String("sin(x)")]);
-
-      let expr = Expr::from_str("5").unwrap();
-
-      serde_test::assert_de_tokens(&expr, &[Token::F64(5.)]);
-      serde_test::assert_de_tokens(&expr, &[Token::U8(5)]);
-      serde_test::assert_de_tokens(&expr, &[Token::I8(5)]);
-    }
-
-    #[test]
-    fn test_json_deserialization() {
-      #[derive(Deserialize)]
-      struct Ode {
-        #[serde(deserialize_with = "as_f64")]
-        x0: f64,
-        #[serde(deserialize_with = "as_f64")]
-        t0: f64,
-        f: Expr,
-        g: Expr,
-        h: Expr,
-      }
-
-      let config = r#"
-            {
-                "x0": "cos(1.)",
-                "t0": 2,
-                "f": "sin(x)",
-                "g": 2.5,
-                "h": 5
-            }
-            "#;
-      let ode: Ode = serde_json::from_str(config).unwrap();
-
-      assert_eq!(ode.x0, 1f64.cos());
-      assert_eq!(ode.t0, 2f64);
-      assert_eq!(ode.f.bind("x").unwrap()(2.), 2f64.sin());
-      assert_eq!(ode.g.eval().unwrap(), 2.5f64);
-      assert_eq!(ode.h.eval().unwrap(), 5f64);
-    }
   }
 }
 

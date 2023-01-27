@@ -5,6 +5,10 @@
 //! The parser should tokenize only well-formed expressions.
 //!
 //! [nom]: https://crates.io/crates/nom
+use crate::shunting_yard::to_rpn;
+
+use super::Expr;
+
 use nom::{
   branch::alt,
   bytes::complete::{is_not, tag},
@@ -212,7 +216,7 @@ enum ParenState {
 ///
 /// Also this breaks the usual way that parser combinators are written for
 /// considerably better performance as it uses much less backtracking
-pub(crate) fn expression(mut input: &[u8]) -> IResult<&[u8], Vec<Token>> {
+pub(crate) fn tokens(mut input: &[u8]) -> IResult<&[u8], Vec<Token>> {
   use self::ParenState::*;
   use self::Token::*;
   use self::TokenizerState::*;
@@ -262,6 +266,10 @@ pub(crate) fn expression(mut input: &[u8]) -> IResult<&[u8], Vec<Token>> {
   }
 }
 
+pub fn expression(input: &[u8]) -> IResult<&[u8], Expr> {
+  map_res(tokens, |tkns| to_rpn(tkns).map(|rpn| Expr(rpn)))(input)
+}
+
 /// Tokenize a given mathematical expression.
 ///
 /// The parser should return `Ok` only if the expression is well-formed.
@@ -271,7 +279,7 @@ pub(crate) fn expression(mut input: &[u8]) -> IResult<&[u8], Vec<Token>> {
 /// Returns `Err` if the expression is not well-formed.
 pub fn tokenize<S: AsRef<str>>(input: S) -> Result<Vec<Token>, ParseError> {
   let bytes = input.as_ref().as_bytes();
-  expression(bytes)
+  tokens(bytes)
     .map(|(_, tkns)| tkns)
     .map_err(|err| ParseError::from((bytes, err)))
 }

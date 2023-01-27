@@ -1,8 +1,12 @@
-use super::{builtin, ContextProvider, Expr};
+use super::{builtin, ContextProvider, Expr, SubstituteError};
 use crate::Evaluatable_Trait;
 use Error;
 
+mod parser;
+mod symbolic;
+
 /// A relation between two expressions, e.g. `x = 5`
+#[derive(Clone, PartialEq)]
 pub struct Eqtn(pub(crate) Expr, pub(crate) Expr);
 
 /// We can implement all of the eval methods in terms of the left and right

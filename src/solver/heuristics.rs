@@ -30,6 +30,12 @@ where
   }
 }
 
+/// A helper function to translate heuristics on expressions into heuristics on
+/// equations. We define the ordering via a tuple that prioritises the LHS.
+fn rank_eqtn<H: Heuristic<Expr>>(heur: &H, Eqtn(lhs, rhs): &Eqtn) -> (H::Order, H::Order) {
+  (heur.value(lhs), heur.value(rhs))
+}
+
 /// A trait used to initialise some Heuristic over variables
 pub trait OnVar {
   fn on(var: String) -> Self;
@@ -70,9 +76,9 @@ impl Heuristic<Expr> for MaxNesting {
   }
 }
 impl Heuristic<Eqtn> for MaxNesting {
-  type Order = usize;
+  type Order = (usize, usize);
   fn value(&self, node: &Eqtn) -> Self::Order {
-    self.value(&node.0) + self.value(&node.1)
+    rank_eqtn(self, node)
   }
 }
 impl OnVar for MaxNesting {
@@ -101,9 +107,9 @@ impl Heuristic<Expr> for MinNesting {
   }
 }
 impl Heuristic<Eqtn> for MinNesting {
-  type Order = usize;
+  type Order = (usize, usize);
   fn value(&self, node: &Eqtn) -> Self::Order {
-    self.value(&node.0) + self.value(&node.1)
+    rank_eqtn(self, node)
   }
 }
 impl OnVar for MinNesting {
@@ -122,9 +128,9 @@ impl Heuristic<Expr> for NoOccurences {
   }
 }
 impl Heuristic<Eqtn> for NoOccurences {
-  type Order = usize;
+  type Order = (usize, usize);
   fn value(&self, node: &Eqtn) -> Self::Order {
-    self.value(&node.0) + self.value(&node.1)
+    rank_eqtn(self, node)
   }
 }
 impl OnVar for NoOccurences {
@@ -142,9 +148,9 @@ impl Heuristic<Expr> for Length {
   }
 }
 impl Heuristic<Eqtn> for Length {
-  type Order = usize;
+  type Order = (usize, usize);
   fn value(&self, node: &Eqtn) -> Self::Order {
-    self.value(&node.0) + self.value(&node.1)
+    rank_eqtn(self, node)
   }
 }
 impl OnVar for Length {

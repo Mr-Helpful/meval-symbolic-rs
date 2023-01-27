@@ -1,26 +1,36 @@
 use std::collections::HashSet;
 
-pub use self::heuristics::{Heuristic, MaxNesting, OnVar};
+pub use self::heuristics::{Heuristic, OnVar};
 use self::{
-  heuristics::{Length, NoOccurences},
-  rules::{Rule, Rules},
+  heuristics::{Length, MaxNesting, NoOccurences},
+  rules::Rules,
 };
-use super::{Eqtn, Expr, Token};
+use super::{Eqtn, Error, Expr, Token};
 
 mod heuristics;
 mod rules;
 
-pub struct Solver<H: Heuristic<Eqtn> + OnVar = (MaxNesting, NoOccurences, Length)>(H, Rules);
+/// A Solver that attempts to isolate a single variable on either the left or
+/// right hand side of an equation, i.e. `x = ...`
+///
+/// The solver operates primarily via a depth limited search, with both a
+/// configurable heuristic over equations and a configurable depth limit.
+/// The solver also requires a set of rules to apply to equations.
+pub struct Solver<
+  H: Heuristic<Eqtn> + OnVar = (MaxNesting, NoOccurences, Length),
+  const DEPTH: usize = 10,
+>(H, Rules);
 
 impl<H: Heuristic<Eqtn> + OnVar> OnVar for Solver<H> {
+  /// Defines a solver s.t. it will try to isolate `var` using the heuristic.
   fn on(var: String) -> Self {
     Self(OnVar::on(var), Default::default())
   }
 }
 
-impl<H: Heuristic<Eqtn> + OnVar> Solver<H> {
+impl<H: Heuristic<Eqtn> + OnVar, const DEPTH: usize> Solver<H, DEPTH> {
   pub fn solve(&self, eqtn: Eqtn) -> Result<Eqtn, String> {
-    const DEPTH: usize = 10;
+    // TODO: this is __very much__ not finished, just use a DLS
     let mut eqtns = vec![eqtn];
     let seen = HashSet::<Eqtn>::new();
 
@@ -31,6 +41,6 @@ impl<H: Heuristic<Eqtn> + OnVar> Solver<H> {
       }
     }
 
-    Ok(eqtns.pop().unwrap()) // TODO
+    Ok(eqtns.pop().unwrap())
   }
 }

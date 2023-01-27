@@ -227,15 +227,15 @@ impl<'a> Context<'a> {
         ctx.funcn("min", min_array, 1..);
 
         ctx.func("cbrt", f64::cbrt);
-        ctx.func("exp_m1", f64::exp_m1);
         ctx.func("exp2", f64::exp2);
-        ctx.func("fract", f64::fract);
-        ctx.func("ln_1p", f64::ln_1p);
+        ctx.func("exp_m1", f64::exp_m1);
+        ctx.func2("log", f64::log);
         ctx.func("log2", f64::log2);
+        ctx.func("ln_1p", f64::ln_1p);
         ctx.func("recip", f64::recip);
+        ctx.func("fract", f64::fract);
         ctx.func("trunc", f64::trunc);
         ctx.func2("hypot", f64::hypot);
-        ctx.func2("log", f64::log);
         ctx.func3("mul_add", f64::mul_add);
 
         ctx

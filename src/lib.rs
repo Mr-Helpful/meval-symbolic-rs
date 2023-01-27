@@ -208,7 +208,7 @@ pub use expr::{
   Context, ContextProvider, Expr, FuncEvalError,
 };
 
-use expr::{builtin, ParseError, RPNError, Token};
+use expr::{builtin, ParseError, RPNError, SubstituteError, Token};
 use std::fmt::{self, Display, Formatter};
 
 /// An error produced during parsing or evaluation.
