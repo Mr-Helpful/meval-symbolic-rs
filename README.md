@@ -6,9 +6,9 @@
 
 This [Rust] crate builds on the work of [meval](https://github.com/rekka/meval-rs) by adding:
 
-[x] support for common maths operators `+,-,*,/,,%` and methods `abs,sin,...` on expressions
-[ ] support for replacing subexpressions, i.e. `replace((x + 2) + x, x + 2, u) = u + x`
-[ ] symbolic solving for variables within expressions, i.e. `solve(x^2 + 2x + 1 = 0, x) = -1`
+- [x] support for common maths operators `+,-,*,/,,%` and methods `abs,sin,...` on expressions
+- [ ] support for replacing subexpressions, i.e. `replace((x + 2) + x, x + 2, u) = u + x`
+- [ ] symbolic solving for variables within expressions, i.e. `solve(x^2 + 2x + 1 = 0, x) = -1`
 
 ## Documentation
 
